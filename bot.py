@@ -1,5 +1,5 @@
 from config import BOT_TOKEN
-import telebot, sqlite3, time, schedule
+import telebot, sqlite3
 from telebot import types
 bot = telebot.TeleBot(BOT_TOKEN)
 worker_dict = {}
