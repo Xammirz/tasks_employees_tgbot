@@ -37,6 +37,7 @@ def start(message):
     btn4 = types.KeyboardButton('Мои задания')
     btn5 = types.KeyboardButton('Завершить задание')
     btn6 = types.KeyboardButton("Удалить работника")
+    btn7 = types.KeyboardButton("Проверить меня в бд")
     if message.chat.id == 1134632256:
         glav_markup.add(btn1, btn2, btn3, btn6)
         
@@ -46,6 +47,14 @@ def start(message):
         bot.send_message(message.chat.id, 'Здравствуйте!', reply_markup=glav_markup)
 @bot.message_handler(content_types=["text"])
 def core(message):  
+    if message.text == 'Проверить меня в бд':
+        cursor.execute(f"SELECT * FROM worker WHERE user_id = {message.chat.id}")
+        if cursor.fetchone() == None:
+            bot.send_message(message.chat.id, 'Вас нет в нашей базе данных!')
+        else:
+            cursor.execute(f"SELECT * FROM worker WHERE user_id = {message.chat.id}")
+            a = cursor.fetchone()
+            bot.send_message(message.chat.id, f'{a[2]}, Вы есть в нашей базе данных')
     if message.text == 'Удалить работника' and message.chat.id == 1134632256:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
         try:
