@@ -1,25 +1,35 @@
-
 from config import BOT_TOKEN
-import telebot, sqlite3
+import telebot, sqlite3, time, schedule
 from telebot import types
 bot = telebot.TeleBot(BOT_TOKEN)
 worker_dict = {}
 workers = []
+class IncrementCounter:
+    
+    def __init__(self):
+        self._value = 0
+    
+    def new_value(self):
+        self._value += 1
+        return self._value
+counter1 = IncrementCounter()
 class Worker:
     def __init__(self, name):
         self.name = name
         self.id = None
 conn = sqlite3.connect('database.db', check_same_thread=False)
 cursor = conn.cursor()
+
 def db_table_val(user_id: int, user_name: str):
 	cursor.execute('INSERT INTO worker (user_id, user_name) VALUES (?, ?)', (user_id, user_name))
 	conn.commit()
 def db_table_val_q(text: str, user_id: int):
 	cursor.execute('INSERT INTO quest (text, user_id) VALUES (?, ?)', (text, user_id))
 	conn.commit()
+
 @bot.message_handler(commands=["start"])
 def start(message):
-    global glav_markup
+    
     glav_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     btn1 = types.KeyboardButton("Задать задачу")
     btn2 = types.KeyboardButton("Все работники")
@@ -88,6 +98,7 @@ def core(message):
             bot.send_message(1134632256, 'Все работники:')
             cursor.execute('SELECT * FROM worker')
             n = cursor.fetchall()
+            
             for row in n:
                 bot.send_message(1134632256, f'id:{row[0]}\nИмя:{row[2]}')
         except Exception as e:
@@ -117,6 +128,7 @@ def worker_id(message):
         user = worker_dict[chat_id]
         user.id = id
         db_table_val(user_id=id, user_name=user.name)
+        
         bot.send_message(message.chat.id,f'Вы добавили работника {user.name}')
     
       
@@ -144,9 +156,19 @@ def final_quest(message):
         bot.send_message(1134632256, e)
 def agree(message):
     if message.text == 'Да' and message.chat.id == 1134632256:
+        glav_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        btn1 = types.KeyboardButton("Задать задачу")
+        btn2 = types.KeyboardButton("Все работники")
+        btn3 = types.KeyboardButton('+ работник')
+        btn6 = types.KeyboardButton("Удалить работника")
+        if message.chat.id == 1134632256:
+            glav_markup.add(btn1, btn2, btn3, btn6)
+        c = 0
         try:
-            bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем")
+            c = c + 1
+            bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем! Всего вы решили {counter1.new_value()} заданий", reply_markup=glav_markup)
             cursor.execute(f'DELETE from quest where id = {dok_quest[0]}')
+            conn.commit()
         except Exception as e:
             bot.send_message(1134632256, e)
     if message.text == 'Нет' and message.chat.id == 1134632256: 
@@ -173,4 +195,5 @@ def dok_photos(message):
     bot.copy_message(chat_id=1134632256, from_chat_id=message.chat.id, message_id=message.id)
     msg = bot.send_message(1134632256, f'Задание "{dok_quest[1]}" присылается, засчитывать задание?', reply_markup=markup)
     bot.register_next_step_handler(msg, agree)
+
 bot.polling(none_stop=False)
