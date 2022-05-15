@@ -113,13 +113,13 @@ def worker_id(message):
             msg = bot.reply_to(message, 'Ид бывает цифрами')
             bot.register_next_step_handler(msg, worker_id)
             return
-        if len(id) == 10:
-            user = worker_dict[chat_id]
-            user.id = id
-            db_table_val(user_id=id, user_name=user.name)
-            bot.send_message(message.chat.id,f'Вы добавили работника {user.name}')
-        else:
-            bot.send_message(message.chat.id,f'Проверьте верность ид!')
+        
+        user = worker_dict[chat_id]
+        user.id = id
+        db_table_val(user_id=id, user_name=user.name)
+        bot.send_message(message.chat.id,f'Вы добавили работника {user.name}')
+    
+      
     except Exception as e:
         bot.reply_to(message, e)
 def core2( message):
