@@ -26,25 +26,26 @@ def db_table_val(user_id: int, user_name: str):
 def db_table_val_q(text: str, user_id: int):
 	cursor.execute('INSERT INTO quest (text, user_id) VALUES (?, ?)', (text, user_id))
 	conn.commit()
-
-@bot.message_handler(commands=["start"])
-def start(message):
-    
+class MarkUser:
+    btn4 = types.KeyboardButton('Мои задания')
+    btn5 = types.KeyboardButton('Завершить задание')
+    btn7 = types.KeyboardButton("Проверить меня в бд")
+    glav_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    glav_markup.add(btn4, btn5, btn7)
+class MarkAdmin:
     glav_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
     btn1 = types.KeyboardButton("Задать задачу")
     btn2 = types.KeyboardButton("Все работники")
     btn3 = types.KeyboardButton('+ работник')
-    btn4 = types.KeyboardButton('Мои задания')
-    btn5 = types.KeyboardButton('Завершить задание')
     btn6 = types.KeyboardButton("Удалить работника")
-    btn7 = types.KeyboardButton("Проверить меня в бд")
+    glav_markup.add(btn1, btn2, btn3, btn6)
+@bot.message_handler(commands=["start"])
+def start(message):
     if message.chat.id == 1134632256:
-        glav_markup.add(btn1, btn2, btn3, btn6)
-        
-        bot.send_message(1134632256, 'Здравствуйте, Админ, ваша админ панель:', reply_markup=glav_markup)
+
+        bot.send_message(1134632256, 'Здравствуйте, Админ, ваша админ панель:', reply_markup=MarkAdmin.glav_markup)
     else:
-        glav_markup.add(btn4, btn5)
-        bot.send_message(message.chat.id, 'Здравствуйте!', reply_markup=glav_markup)
+        bot.send_message(message.chat.id, 'Здравствуйте!', reply_markup=MarkUser.glav_markup)
 @bot.message_handler(content_types=["text"])
 def core(message):  
     if message.text == 'Проверить меня в бд':
@@ -145,11 +146,12 @@ def worker_id(message):
         bot.reply_to(message, e)
 def core2( message):
     try:
+        
         cursor.execute(f'SELECT * FROM worker where id = {message.text}')
         global o
         o = cursor.fetchone()
         bot.send_message(o[1], 'Для тебя готовится задание')
-        msg = bot.send_message(1134632256, f'Какое задание мы дадим "{o[2]}"')
+        msg = bot.send_message(1134632256, f'Какое задание мы дадим "{o[2]}"', reply_markup=MarkAdmin.glav_markup)
         bot.register_next_step_handler(msg, quest)
     except Exception as e:
         bot.send_message(1134632256, e)
@@ -159,23 +161,15 @@ def final_quest(message):
         cursor.execute(f'SELECT * FROM quest where id = {quest_id}')
         global dok_quest
         dok_quest = cursor.fetchone()
-        msg = bot.send_message(message.chat.id, f'Пожалуйста, скиньте фотодоказательства проделанной работы задания"{dok_quest[1]}"))')
+        msg = bot.send_message(message.chat.id, f'Пожалуйста, скиньте фотодоказательства проделанной работы задания"{dok_quest[1]}"))', reply_markup=MarkUser.glav_markup)
         bot.register_next_step_handler(msg, dok_photos)
     except Exception as e:
         bot.send_message(1134632256, e)
 def agree(message):
     if message.text == 'Да' and message.chat.id == 1134632256:
-        glav_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-        btn1 = types.KeyboardButton("Задать задачу")
-        btn2 = types.KeyboardButton("Все работники")
-        btn3 = types.KeyboardButton('+ работник')
-        btn6 = types.KeyboardButton("Удалить работника")
-        if message.chat.id == 1134632256:
-            glav_markup.add(btn1, btn2, btn3, btn6)
-        c = 0
         try:
-            c = c + 1
-            bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем! Всего вы решили {counter1.new_value()} заданий", reply_markup=glav_markup)
+            bot.send_message(1134632256, f"задание '{dok_quest[1]}' засчитано!", reply_markup=MarkAdmin.glav_markup)
+            bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем! Всего вы решили {counter1.new_value()} заданий")
             cursor.execute(f'DELETE from quest where id = {dok_quest[0]}')
             conn.commit()
         except Exception as e:
@@ -190,7 +184,7 @@ def delete_worker(message):
     try:
         cursor.execute(f'SELECT * FROM worker where id = {message.text}')
         worker = cursor.fetchone()
-        bot.send_message(message.chat.id,f'Работник "{worker[2]} был удален"')
+        bot.send_message(message.chat.id,f'Работник "{worker[2]} был удален"', reply_markup=MarkAdmin.glav_markup)
         cursor.execute(f'DELETE from worker where id = {message.text}')
         conn.commit()
     except Exception as e:
