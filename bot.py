@@ -1,5 +1,6 @@
 from config import BOT_TOKEN
 import telebot, sqlite3
+import schedule, time
 from telebot import types
 bot = telebot.TeleBot(BOT_TOKEN)
 worker_dict = {}
@@ -13,6 +14,7 @@ class IncrementCounter:
         self._value += 1
         return self._value
 counter1 = IncrementCounter()
+counter2 = IncrementCounter()
 class Worker:
     def __init__(self, name):
         self.name = name
@@ -20,12 +22,21 @@ class Worker:
 conn = sqlite3.connect('database.db', check_same_thread=False)
 cursor = conn.cursor()
 
-def db_table_val(user_id: int, user_name: str):
-	cursor.execute('INSERT INTO worker (user_id, user_name) VALUES (?, ?)', (user_id, user_name))
+def db_table_val(user_id: int, user_name: str, everyday:int):
+	cursor.execute('INSERT INTO worker (user_id, user_name, everyday) VALUES (?, ?, ?)', (user_id, user_name, everyday))
 	conn.commit()
 def db_table_val_q(text: str, user_id: int):
 	cursor.execute('INSERT INTO quest (text, user_id) VALUES (?, ?)', (text, user_id))
 	conn.commit()
+def everyday_sms():
+    cursor.execute(f'SELECT * from worker')
+    a = cursor.fetchall()
+    bot.send_message(1134632256, 'Ежедневный отчет:')
+    for i in a:
+        cursor.execute(f"Update worker set everyday = 0 where id = {i[0]}")
+        conn.commit()
+        bot.send_message(1134632256, f'{i[2]} Выполнил {i[3]} Заданий(я)')
+
 class MarkUser:
     btn4 = types.KeyboardButton('Мои задания')
     btn5 = types.KeyboardButton('Завершить задание')
@@ -38,6 +49,7 @@ class MarkAdmin:
     btn2 = types.KeyboardButton("Все работники")
     btn3 = types.KeyboardButton('+ работник')
     btn6 = types.KeyboardButton("Удалить работника")
+    
     glav_markup.add(btn1, btn2, btn3, btn6)
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -137,7 +149,7 @@ def worker_id(message):
         
         user = worker_dict[chat_id]
         user.id = id
-        db_table_val(user_id=id, user_name=user.name)
+        db_table_val(user_id=id, user_name=user.name, everyday=0)
         
         bot.send_message(message.chat.id,f'Вы добавили работника {user.name}')
     
@@ -169,7 +181,9 @@ def agree(message):
     if message.text == 'Да' and message.chat.id == 1134632256:
         try:
             bot.send_message(1134632256, f"задание '{dok_quest[1]}' засчитано!", reply_markup=MarkAdmin.glav_markup)
+
             bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем! Всего вы решили {counter1.new_value()} заданий")
+            cursor.execute(f"Update worker set everyday = {counter2.new_value()} where user_id = {dok_quest[2]}")
             cursor.execute(f'DELETE from quest where id = {dok_quest[0]}')
             conn.commit()
         except Exception as e:
@@ -198,5 +212,11 @@ def dok_photos(message):
     bot.copy_message(chat_id=1134632256, from_chat_id=message.chat.id, message_id=message.id)
     msg = bot.send_message(1134632256, f'Задание "{dok_quest[1]}" присылается, засчитывать задание?', reply_markup=markup)
     bot.register_next_step_handler(msg, agree)
+cursor.execute(f'SELECT * FROM worker')
+fetch = cursor.fetchone()
+schedule.every().day.at("10:30").do(everyday_sms)
 
+while 1:
+   schedule.run_pending()
+   time.sleep(3)
 bot.polling(none_stop=False)
