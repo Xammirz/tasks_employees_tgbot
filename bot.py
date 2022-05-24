@@ -1,4 +1,5 @@
 from config import BOT_TOKEN
+from multiprocessing import *
 import telebot, sqlite3
 import schedule, time
 from telebot import types
@@ -15,6 +16,7 @@ class IncrementCounter:
         return self._value
 counter1 = IncrementCounter()
 counter2 = IncrementCounter()
+counter3 = IncrementCounter()
 class Worker:
     def __init__(self, name):
         self.name = name
@@ -35,8 +37,15 @@ def everyday_sms():
     for i in a:
         cursor.execute(f"Update worker set everyday = 0 where id = {i[0]}")
         conn.commit()
-        bot.send_message(1134632256, f'{i[2]} Выполнил {i[3]} Заданий(я)')
-
+        bot.send_message(1134632256, f'{i[2]} Выполнил {i[3]} Заданий(е)')
+def everyweek_sms():
+    cursor.execute(f'SELECT * from worker')
+    a = cursor.fetchall()
+    bot.send_message(1134632256, 'Еженедельный отчет:')
+    for i in a:
+        cursor.execute(f"Update worker set eweryweek = 0 where id = {i[0]}")
+        conn.commit()
+        bot.send_message(1134632256, f'{i[2]} Выполнил {i[3]} Заданий(е)')
 class MarkUser:
     btn4 = types.KeyboardButton('Мои задания')
     btn5 = types.KeyboardButton('Завершить задание')
@@ -184,6 +193,7 @@ def agree(message):
 
             bot.send_message(dok_quest[2], f"Ваше задание '{dok_quest[1]}' засчитано! Поздравляем! Всего вы решили {counter1.new_value()} заданий")
             cursor.execute(f"Update worker set everyday = {counter2.new_value()} where user_id = {dok_quest[2]}")
+            cursor.execute(f"Update worker set everyweek = {counter3.new_value()} where user_id = {dok_quest[2]}")
             cursor.execute(f'DELETE from quest where id = {dok_quest[0]}')
             conn.commit()
         except Exception as e:
@@ -212,11 +222,18 @@ def dok_photos(message):
     bot.copy_message(chat_id=1134632256, from_chat_id=message.chat.id, message_id=message.id)
     msg = bot.send_message(1134632256, f'Задание "{dok_quest[1]}" присылается, засчитывать задание?', reply_markup=markup)
     bot.register_next_step_handler(msg, agree)
-cursor.execute(f'SELECT * FROM worker')
-fetch = cursor.fetchone()
-schedule.every().day.at("10:30").do(everyday_sms)
 
-while 1:
-   schedule.run_pending()
-   time.sleep(3)
-bot.polling(none_stop=False)
+
+def start_process():
+    p1 = Process(target=start_schedule, args=()).start()
+
+def start_schedule():
+   schedule.every().day.at("00:00").do(everyday_sms)
+   schedule.every(1).weeks.do(everyweek_sms)
+   while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+if __name__ == '__main__':
+    start_process()
+    bot.polling(none_stop=True)
