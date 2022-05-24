@@ -233,7 +233,3 @@ def start_schedule():
    while True:
         schedule.run_pending()
         time.sleep(1)
-
-if __name__ == '__main__':
-    start_process()
-    bot.polling(none_stop=True)
