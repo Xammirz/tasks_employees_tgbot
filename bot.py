@@ -36,9 +36,9 @@ def everyday_sms():
     a = cursor.fetchall()
     bot.send_message(1134632256, 'Ежедневный отчет:')
     for i in a:
-        cursor.execute(f"Update worker set everyday = 0 where id = {i[0]}")
-        conn.commit()
         bot.send_message(1134632256, f'{i[2]} Выполнил {i[3]} Заданий(е)')
+        cursor.execute(f"Update worker set everyday = 0 where user_id = {i[1]}")
+        conn.commit()
 def everyweek_sms():
     cursor.execute(f'SELECT * from worker')
     a = cursor.fetchall()
