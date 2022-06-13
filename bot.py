@@ -26,7 +26,9 @@ conn = sqlite3.connect('database.db', check_same_thread=False)
 cursor = conn.cursor()
 
 def db_table_val(user_id: int, user_name: str, everyday:int):
-	cursor.execute('INSERT INTO worker (user_id, user_name, everyday) VALUES (?, ?, ?)', (user_id, user_name, everyday))
+	cursor.execute("""INSERT INTO worker 
+    (user_id, user_name, everyday) 
+    VALUES (?, ?, ?)""", (user_id, user_name, everyday))
 	conn.commit()
 def db_table_val_q(text: str, user_id: int):
 	cursor.execute('INSERT INTO quest (text, user_id) VALUES (?, ?)', (text, user_id))
